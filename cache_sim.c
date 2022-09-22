@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <math.h>
 
 typedef enum
 {
@@ -40,7 +41,6 @@ typedef struct
 
 uint32_t cache_size;
 uint32_t block_size = 64;
-uint32_t offset_bits_count = 6;
 cache_map_t cache_mapping;
 cache_org_t cache_org;
 
@@ -152,7 +152,7 @@ int main(int argc, char **argv)
 
     /* Open the file mem_trace.txt to read memory accesses */
     FILE *ptr_file;
-    ptr_file = fopen("mem_trace_long.txt", "r");
+    ptr_file = fopen("mem_trace.txt", "r");
     if (!ptr_file)
     {
         printf("Unable to open the trace file\n");
@@ -165,16 +165,15 @@ int main(int argc, char **argv)
     uint32_t cache[number_of_blocks];
     memset(cache, 0, number_of_blocks * sizeof(u_int32_t));
 
-    // Counter used for FIFO queue in case of accosiative mapping
+    // Counter(s) used for FIFO queue in case of accosiative mapping
     int counter = 0;
+    int instruction_counter = 0;
+    int data_counter = 0;
 
     /* Loop until whole trace file has been read */
     mem_access_t access;
-    int count = 0;
     while (1)
     {
-        count++;
-        printf("%d\n", count);
         access = read_transaction(ptr_file);
         // If no transactions left, break out of loop
         if (access.address == 0)
@@ -186,12 +185,33 @@ int main(int argc, char **argv)
         // Increment accesses no matter what
         cache_statistics.accesses++;
 
+        uint32_t address = access.address;
+
+        /* if (cache_org == sc)
+        {
+            // If the cache is split, only half the address space can be accessed.
+            // Therefore, we remove the LSB
+            address = address >> 1;
+
+            if (access.accesstype == data)
+            {
+                // If the access type is data, we only want to access the second half of the cache
+                // Therefore, we increment by 2^32 which effectively sets the MSB from 0 to 1
+                address += pow(2, 31);
+            }
+        } */
+
+        // Since the cache block size is 64 bytes, 6 bits of the address
+        // will be used for the offset inside the cache block.
+        // We remove the 6 least significant bits to get only the tag part of the address
+        int tag = access.address >> 6;
+
         if (cache_mapping == fa)
         {
             bool in_cache = false;
             for (int i = 0; i < number_of_blocks; i++)
             {
-                if (cache[i] == access.address >> offset_bits_count)
+                if (cache[i] == tag)
                 {
                     in_cache = true;
                     break;
@@ -204,8 +224,24 @@ int main(int argc, char **argv)
             }
             else
             {
-                cache[counter] = access.address >> offset_bits_count;
-                counter = (counter + 1) % number_of_blocks;
+                if (cache_org == sc)
+                {
+                    if (access.accesstype == instruction)
+                    {
+                        cache[instruction_counter] = tag;
+                        instruction_counter += (instruction_counter + 1) % (number_of_blocks / 2);
+                    }
+                    else if (access.accesstype == data)
+                    {
+                        cache[number_of_blocks / 2 + data_counter] = tag;
+                        instruction_counter += (instruction_counter + 1) % (number_of_blocks / 2);
+                    }
+                }
+                else if (cache_org == uc)
+                {
+                    cache[counter] = tag;
+                    counter = (counter + 1) % number_of_blocks;
+                }
             }
         }
     }
