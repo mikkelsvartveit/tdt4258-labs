@@ -152,7 +152,7 @@ int main(int argc, char **argv)
 
     /* Open the file mem_trace.txt to read memory accesses */
     FILE *ptr_file;
-    ptr_file = fopen("mem_trace.txt", "r");
+    ptr_file = fopen("mem_trace_long.txt", "r");
     if (!ptr_file)
     {
         printf("Unable to open the trace file\n");
