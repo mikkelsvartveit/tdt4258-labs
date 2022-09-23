@@ -180,34 +180,19 @@ int main(int argc, char **argv)
             break;
         printf("%d %x\n", access.accesstype, access.address);
         /* Do a cache access */
-        // ADD YOUR CODE HERE
 
         // Increment accesses no matter what
         cache_statistics.accesses++;
 
         uint32_t address = access.address;
 
-        /* if (cache_org == sc)
-        {
-            // If the cache is split, only half the address space can be accessed.
-            // Therefore, we remove the LSB
-            address = address >> 1;
-
-            if (access.accesstype == data)
-            {
-                // If the access type is data, we only want to access the second half of the cache
-                // Therefore, we increment by 2^32 which effectively sets the MSB from 0 to 1
-                address += pow(2, 31);
-            }
-        } */
-
-        // Since the cache block size is 64 bytes, 6 bits of the address
-        // will be used for the offset inside the cache block.
-        // We remove the 6 least significant bits to get only the tag part of the address
-        int tag = access.address >> 6;
-
         if (cache_mapping == fa)
         {
+            // Since the cache block size is 64 bytes, 6 bits of the address
+            // will be used for the offset inside the cache block.
+            // We remove the 6 least significant bits to get only the tag part of the address
+            int tag = access.address >> 6;
+
             bool in_cache = false;
             for (int i = 0; i < number_of_blocks; i++)
             {
@@ -242,6 +227,31 @@ int main(int argc, char **argv)
                     cache[counter] = tag;
                     counter = (counter + 1) % number_of_blocks;
                 }
+            }
+        }
+
+        else if (cache_mapping == dm)
+        {
+            int number_of_index_bits;
+            if (cache_org == sc)
+            {
+                number_of_index_bits = log2(number_of_blocks);
+            }
+            else if (cache_org == uc)
+            {
+                number_of_index_bits = log2(number_of_blocks / 2);
+            }
+
+            uint32_t index = (access.address >> 6) & ((1 << number_of_index_bits) - 1);
+            uint32_t tag = access.address >> (6 + number_of_index_bits);
+
+            if (cache[index] == tag)
+            {
+                cache_statistics.hits++;
+            }
+            else
+            {
+                cache[index] = tag;
             }
         }
     }
