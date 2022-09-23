@@ -178,7 +178,7 @@ int main(int argc, char **argv)
         // If no transactions left, break out of loop
         if (access.address == 0)
             break;
-        printf("%d %x\n", access.accesstype, access.address);
+        // printf("%d %x\n", access.accesstype, access.address);
         /* Do a cache access */
 
         // Increment accesses no matter what
