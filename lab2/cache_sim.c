@@ -239,7 +239,7 @@ int main(int argc, char **argv)
             }
             else if (cache_org == uc)
             {
-                number_of_index_bits = log2(number_of_blocks / 2);
+                number_of_index_bits = log2(number_of_blocks) - 1;
             }
 
             uint32_t index = (access.address >> 6) & ((1 << number_of_index_bits) - 1);
