@@ -194,12 +194,38 @@ int main(int argc, char **argv)
             int tag = access.address >> 6;
 
             bool in_cache = false;
-            for (int i = 0; i < number_of_blocks; i++)
-            {
-                if (cache[i] == tag)
+            if (cache_org == uc) {
+                for (int i = 0; i < number_of_blocks; i++)
                 {
-                    in_cache = true;
-                    break;
+                    if (cache[i] == tag)
+                    {
+                        in_cache = true;
+                        break;
+                    }
+                }
+            }
+            else if (cache_org == sc) {
+                if (access.accesstype == instruction)
+                {
+                    for (int i = 0; i < number_of_blocks / 2; i++)
+                    {
+                        if (cache[i] == tag)
+                        {
+                            in_cache = true;
+                            break;
+                        }
+                    }
+                }
+                else if (access.accesstype == data)
+                {
+                    for (int i = number_of_blocks / 2; i < number_of_blocks; i++)
+                    {
+                        if (cache[i] == tag)
+                        {
+                            in_cache = true;
+                            break;
+                        }
+                    }
                 }
             }
 
@@ -219,7 +245,7 @@ int main(int argc, char **argv)
                     else if (access.accesstype == data)
                     {
                         cache[number_of_blocks / 2 + data_counter] = tag;
-                        data_counter += (data_counter + 1) % (number_of_blocks / 2);
+                        data_counter += (instruction_counter + 1) % (number_of_blocks / 2);
                     }
                 }
                 else if (cache_org == uc)
