@@ -245,7 +245,7 @@ int main(int argc, char **argv)
                     else if (access.accesstype == data)
                     {
                         cache[number_of_blocks / 2 + data_counter] = tag;
-                        data_counter += (instruction_counter + 1) % (number_of_blocks / 2);
+                        data_counter += (data_counter + 1) % (number_of_blocks / 2);
                     }
                 }
                 else if (cache_org == uc)
@@ -261,15 +261,19 @@ int main(int argc, char **argv)
             int number_of_index_bits;
             if (cache_org == sc)
             {
-                number_of_index_bits = log2(number_of_blocks);
+                number_of_index_bits = log2(number_of_blocks) - 1;
             }
             else if (cache_org == uc)
             {
-                number_of_index_bits = log2(number_of_blocks) - 1;
+                number_of_index_bits = log2(number_of_blocks);
             }
 
             uint32_t index = (access.address >> 6) & ((1 << number_of_index_bits) - 1);
             uint32_t tag = access.address >> (6 + number_of_index_bits);
+            
+            if (cache_org == sc && access.accesstype == data) {
+                index += number_of_blocks / 2;
+            }
 
             if (cache[index] == tag)
             {
