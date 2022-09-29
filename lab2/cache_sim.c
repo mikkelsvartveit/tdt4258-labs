@@ -240,12 +240,12 @@ int main(int argc, char **argv)
                     if (access.accesstype == instruction)
                     {
                         cache[instruction_counter] = tag;
-                        instruction_counter += (instruction_counter + 1) % (number_of_blocks / 2);
+                        instruction_counter = (instruction_counter + 1) % (number_of_blocks / 2);
                     }
                     else if (access.accesstype == data)
                     {
                         cache[number_of_blocks / 2 + data_counter] = tag;
-                        data_counter += (data_counter + 1) % (number_of_blocks / 2);
+                        data_counter = (data_counter + 1) % (number_of_blocks / 2);
                     }
                 }
                 else if (cache_org == uc)
