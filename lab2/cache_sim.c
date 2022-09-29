@@ -193,6 +193,7 @@ int main(int argc, char **argv)
             // We remove the 6 least significant bits to get only the tag part of the address
             int tag = access.address >> 6;
 
+            // Loop through cache and check if tag is present
             bool in_cache = false;
             if (cache_org == uc) {
                 for (int i = 0; i < number_of_blocks; i++)
@@ -207,6 +208,7 @@ int main(int argc, char **argv)
             else if (cache_org == sc) {
                 if (access.accesstype == instruction)
                 {
+                    // If instruction access, check only the first half of the cache
                     for (int i = 0; i < number_of_blocks / 2; i++)
                     {
                         if (cache[i] == tag)
@@ -218,6 +220,7 @@ int main(int argc, char **argv)
                 }
                 else if (access.accesstype == data)
                 {
+                    // If data access, check only the second half of the cache
                     for (int i = number_of_blocks / 2; i < number_of_blocks; i++)
                     {
                         if (cache[i] == tag)
@@ -231,6 +234,7 @@ int main(int argc, char **argv)
 
             if (in_cache)
             {
+                // Register cache hit if tag was found
                 cache_statistics.hits++;
             }
             else
@@ -239,17 +243,20 @@ int main(int argc, char **argv)
                 {
                     if (access.accesstype == instruction)
                     {
+                        // If instruction, place in first half of cache
                         cache[instruction_counter] = tag;
                         instruction_counter = (instruction_counter + 1) % (number_of_blocks / 2);
                     }
                     else if (access.accesstype == data)
                     {
+                        // If data, place in second half of cache
                         cache[number_of_blocks / 2 + data_counter] = tag;
                         data_counter = (data_counter + 1) % (number_of_blocks / 2);
                     }
                 }
                 else if (cache_org == uc)
                 {
+                    // If unified cache, place anywhere in cache
                     cache[counter] = tag;
                     counter = (counter + 1) % number_of_blocks;
                 }
@@ -261,6 +268,8 @@ int main(int argc, char **argv)
             int number_of_index_bits;
             if (cache_org == sc)
             {
+                // If sc, we need to divide the number of blocks by 2,
+                // which results in one less index bit
                 number_of_index_bits = log2(number_of_blocks) - 1;
             }
             else if (cache_org == uc)
@@ -268,19 +277,30 @@ int main(int argc, char **argv)
                 number_of_index_bits = log2(number_of_blocks);
             }
 
+            // The index bits are the bits between the tag and the offset
+            // We shift the address to the right by 6 bits to remove the offset
+            // Then we do a bitwise AND with a mask of 1s, which will leave us with
+            // only the index bits
             uint32_t index = (access.address >> 6) & ((1 << number_of_index_bits) - 1);
+
+            // The tag bits are the bits to the left of the index bits
+            // 
             uint32_t tag = access.address >> (6 + number_of_index_bits);
             
             if (cache_org == sc && access.accesstype == data) {
+                // If using separated cache during a data access,
+                // we need to place the tag in the second half of the cache
                 index += number_of_blocks / 2;
             }
 
             if (cache[index] == tag)
             {
+                // Register cache hit if tag was found
                 cache_statistics.hits++;
             }
             else
             {
+                // If tag was not found, place tag in cache
                 cache[index] = tag;
             }
         }
