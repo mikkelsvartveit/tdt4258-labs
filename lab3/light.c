@@ -66,7 +66,18 @@ int main() {
 
   memset(fbdata, 0, fb_data_size);
 
-  set_pixel(fbdata, 3, 3, 0xff, 0, 0xff);
+  for (int i = 0; i < 8; i++) {
+    set_pixel(fbdata, i, 0, 0x10, 0, 0);
+    set_pixel(fbdata, i, 1, 0x10, 0x10, 0);
+    set_pixel(fbdata, i, 2, 0x10, 0x20, 0);
+    set_pixel(fbdata, i, 3, 0x00, 0x20, 0);
+    set_pixel(fbdata, i, 4, 0, 0, 0x10);
+    set_pixel(fbdata, i, 5, 0x08, 0, 0x10);
+    set_pixel(fbdata, i, 6, 0x10, 0, 0x10);
+    set_pixel(fbdata, i, 7, 0x10, 0, 0);
+  }
+
+  set_pixel(fbdata, 3, 3, 0xff, 0xff, 0xff);
 
   munmap(fbdata, fb_data_size);
   close(fd);
