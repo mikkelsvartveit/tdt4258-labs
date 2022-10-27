@@ -65,21 +65,11 @@ gameConfig game = {
     .initNextGameTick = 50,
 };
 
+// Initialize variables for devices
 int fbfd;
 u_int16_t *fbdata;
 int fb_data_size;
 int jsfd;
-
-// Function for setting the value of a pixel in the framebuffer
-void set_pixel(u_int8_t x_pos, u_int8_t y_pos, u_int8_t red, u_int8_t green,
-               u_int8_t blue) {
-  int index = y_pos * 8 + x_pos;
-
-  u_int16_t pixel_value = ((red & (1 << 5) - 1) << 11) +
-                          ((green & (1 << 6) - 1) << 5) + (blue & (1 << 5) - 1);
-
-  fbdata[index] = pixel_value;
-}
 
 // This function is called on the start of your application
 // Here you can initialize what ever you need for your task
@@ -185,6 +175,17 @@ int readSenseHatJoystick() {
   return 0;
 }
 
+// Function for setting the value of a pixel in the framebuffer
+void set_pixel(u_int8_t x_pos, u_int8_t y_pos, u_int8_t red, u_int8_t green,
+               u_int8_t blue) {
+  int index = y_pos * 8 + x_pos;
+
+  u_int16_t pixel_value = ((red & (1 << 5) - 1) << 11) +
+                          ((green & (1 << 6) - 1) << 5) + (blue & (1 << 5) - 1);
+
+  fbdata[index] = pixel_value;
+}
+
 // This function should render the gamefield on the LED matrix. It is called
 // every game tick. The parameter playfieldChanged signals whether the game
 // logic has changed the playfield
@@ -193,6 +194,7 @@ void renderSenseHatMatrix(bool const playfieldChanged) {
   if (playfieldChanged) {
     memset(fbdata, 0, fb_data_size);
 
+    // Set a rainbow background
     for (int i = 0; i < 8; i++) {
       set_pixel(i, 0, 0x10, 0, 0);
       set_pixel(i, 1, 0x10, 0x10, 0);
@@ -204,6 +206,7 @@ void renderSenseHatMatrix(bool const playfieldChanged) {
       set_pixel(i, 7, 0x10, 0, 0);
     }
 
+    // Draw the game state
     for (int i = 0; i < 8; i++) {
       for (int j = 0; j < 8; j++) {
         if (game.playfield[j][i].occupied) {
