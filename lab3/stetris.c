@@ -167,7 +167,9 @@ int readSenseHatJoystick() {
   while (poll(&evpoll, 1, 0) > 0) {
     struct input_event event;
     read(jsfd, &event, sizeof(struct input_event));
-    if (event.type == EV_KEY && event.value == 1) {
+
+    // Event value 1 on keydown, 2 when key is held down continuously
+    if (event.type == EV_KEY && (event.value == 1 || event.value == 2)) {
       return event.code;
     }
   }
