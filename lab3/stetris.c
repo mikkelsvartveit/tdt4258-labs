@@ -112,30 +112,26 @@ bool initializeSenseHat() {
   for (int i = 0; i < 32; i++) {
     char device_string[12];
     sprintf(device_string, "/dev/input/event%d", i);
-    jsfd = open(device_string, O_RDWR);
+    jsfd = open(device_string, O_RDONLY);
 
     if (jsfd < 0) {
       continue;
     }
 
-    struct input_id finfo;
-    ioctl(jsfd, EVIOCGID, &finfo);
-    if (strcmp(finfo.product, "RPi-Sense FB") != 0) {
+    char device_name[128] = {'\0'};
+    ioctl(jsfd, EVIOCGNAME(128), &device_name);
+    printf("%s\n", device_name);
+    if (strcmp(device_name, "Raspberry Pi Sense HAT Joystick") != 0) {
       continue;
     }
 
-    fb_found = true;
+    js_found = true;
     break;
   }
 
-  if (!fb_found) {
+  if (!js_found) {
     return false;
   }
-
-  
-
-
-
 
   struct fb_var_screeninfo vinfo;
   ioctl(fbfd, FBIOGET_VSCREENINFO, &vinfo);
