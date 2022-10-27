@@ -65,7 +65,7 @@ gameConfig game = {
     .initNextGameTick = 50,
 };
 
-// Initialize variables for devices
+// Initialize global variables for devices
 int fbfd;
 u_int16_t *fbdata;
 int fb_data_size;
@@ -75,7 +75,8 @@ int jsfd;
 // Here you can initialize what ever you need for your task
 // return false if something fails, else true
 bool initializeSenseHat() {
-  // Locate the LED matrix framebuffer device
+  // Locate the LED matrix framebuffer,
+  // assuming it is located somewhere between /dev/fb0 and /dev/fb32
   fbfd = -1;
   bool fb_found = false;
   for (int i = 0; i < 32; i++) {
@@ -101,7 +102,8 @@ bool initializeSenseHat() {
     return false;
   }
 
-  // Locate the joystick device
+  // Locate the joystick input device, assuming it is located somewhere
+  // between /dev/input/event0 and /dev/input/event32
   jsfd = -1;
   bool js_found = false;
   for (int i = 0; i < 32; i++) {
@@ -131,15 +133,16 @@ bool initializeSenseHat() {
   struct fb_var_screeninfo vinfo;
   ioctl(fbfd, FBIOGET_VSCREENINFO, &vinfo);
 
+  // Map the LED matrix framebuffer into memory
   int fb_width = vinfo.xres;
   int fb_height = vinfo.yres;
   int fb_bpp = vinfo.bits_per_pixel;
   int fb_bytes = fb_bpp / 8;
   fb_data_size = fb_width * fb_height * fb_bytes;
-
   fbdata =
       mmap(0, fb_data_size, PROT_READ | PROT_WRITE, MAP_SHARED, fbfd, (off_t)0);
 
+  // Set the LED matrix framebuffer to a blank state
   memset(fbdata, 0, fb_data_size);
 
   return true;
@@ -151,8 +154,10 @@ void freeSenseHat() {
   // Turn off LED matrix
   memset(fbdata, 0, fb_data_size);
 
-  // Unmap framebuffer and close file descriptors
+  // Unmap framebuffer
   munmap(fbdata, fb_data_size);
+
+  // Close file descriptors
   close(fbfd);
   close(jsfd);
 }
@@ -164,6 +169,7 @@ void freeSenseHat() {
 int readSenseHatJoystick() {
   struct pollfd evpoll = {.events = POLLIN, .fd = jsfd};
 
+  // Check for joystick events
   while (poll(&evpoll, 1, 0) > 0) {
     struct input_event event;
     read(jsfd, &event, sizeof(struct input_event));
@@ -174,12 +180,13 @@ int readSenseHatJoystick() {
     }
   }
 
+  // Return 0 if no joystick event was detected
   return 0;
 }
 
-// Function for setting the value of a pixel in the framebuffer
-void set_pixel(u_int8_t x_pos, u_int8_t y_pos, u_int8_t red, u_int8_t green,
-               u_int8_t blue) {
+// Custom function for setting the value of a pixel in the framebuffer
+void setPixel(u_int8_t x_pos, u_int8_t y_pos, u_int8_t red, u_int8_t green,
+              u_int8_t blue) {
   int index = y_pos * 8 + x_pos;
 
   u_int16_t pixel_value = ((red & (1 << 5) - 1) << 11) +
@@ -194,25 +201,23 @@ void set_pixel(u_int8_t x_pos, u_int8_t y_pos, u_int8_t red, u_int8_t green,
 void renderSenseHatMatrix(bool const playfieldChanged) {
   (void)playfieldChanged;
   if (playfieldChanged) {
-    memset(fbdata, 0, fb_data_size);
-
     // Set a rainbow background
     for (int i = 0; i < 8; i++) {
-      set_pixel(i, 0, 0x10, 0, 0);
-      set_pixel(i, 1, 0x10, 0x10, 0);
-      set_pixel(i, 2, 0x10, 0x20, 0);
-      set_pixel(i, 3, 0x00, 0x20, 0);
-      set_pixel(i, 4, 0, 0, 0x10);
-      set_pixel(i, 5, 0x08, 0, 0x10);
-      set_pixel(i, 6, 0x10, 0, 0x10);
-      set_pixel(i, 7, 0x10, 0, 0);
+      setPixel(i, 0, 0x10, 0, 0);
+      setPixel(i, 1, 0x10, 0x10, 0);
+      setPixel(i, 2, 0x10, 0x20, 0);
+      setPixel(i, 3, 0x00, 0x20, 0);
+      setPixel(i, 4, 0, 0, 0x10);
+      setPixel(i, 5, 0x08, 0, 0x10);
+      setPixel(i, 6, 0x10, 0, 0x10);
+      setPixel(i, 7, 0x10, 0, 0);
     }
 
-    // Draw the game state
+    // Draw the game state with white tiles
     for (int i = 0; i < 8; i++) {
       for (int j = 0; j < 8; j++) {
         if (game.playfield[j][i].occupied) {
-          set_pixel(i, j, 0xff, 0xff, 0xff);
+          setPixel(i, j, 0xff, 0xff, 0xff);
         }
       }
     }
