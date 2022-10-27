@@ -1,5 +1,6 @@
 // Learning resources:
 // - https://kevinboone.me/linuxfbc.html
+// - https://github.com/Psy1ALise/Gyroscope
 // - Documentation mentioned in handout PDF
 
 #include <fcntl.h>

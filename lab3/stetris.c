@@ -1,3 +1,8 @@
+// Learning resources:
+// - https://kevinboone.me/linuxfbc.html
+// - https://github.com/Psy1ALise/Gyroscope
+// - Documentation mentioned in handout PDF
+
 #include <fcntl.h>
 #include <linux/fb.h>
 #include <linux/input.h>
@@ -161,7 +166,11 @@ void freeSenseHat() {
 // KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT, with the respective direction
 // and KEY_ENTER, when the the joystick is pressed
 // !!! when nothing was pressed you MUST return 0 !!!
-int readSenseHatJoystick() { return 0; }
+int readSenseHatJoystick() {
+  struct input_event event[64];
+  int rd = read(jsfd, event, sizeof(struct input_event) * 64);
+  return 0;
+}
 
 // This function should render the gamefield on the LED matrix. It is called
 // every game tick. The parameter playfieldChanged signals whether the game

@@ -30,8 +30,40 @@ int main() {
     char device_name[128] = {'\0'};
     ioctl(jsfd, EVIOCGNAME(128), &device_name);
     printf("%s\n", device_name);
-    if (strcmp(device_name, "RPi-Sense FB") != 0) {
+    if (strcmp(device_name, "Raspberry Pi Sense HAT Joystick") != 0) {
       continue;
+    }
+
+    js_found = true;
+    continue;
+  }
+
+  if (!js_found) {
+    printf("Sensehat joystick not found\n");
+    return 0;
+  }
+
+  // Check for joystick events
+  struct pollfd evpoll = {.events = POLLIN, .fd = jsfd};
+  while (1) {
+    while (poll(&evpoll, 1, 0) > 0) {
+      struct input_event ev[64];
+      int i, rd;
+
+      rd = read(evpoll.fd, ev, sizeof(struct input_event) * 64);
+      if (rd < (int)sizeof(struct input_event)) {
+        fprintf(stderr, "expected %d bytes, got %d\n",
+                (int)sizeof(struct input_event), rd);
+        return 0;
+      }
+      for (i = 0; i < rd / sizeof(struct input_event); i++) {
+        if (ev->type != EV_KEY)
+          continue;
+        if (ev->value != 1)
+          continue;
+
+        printf("Key: %d\n", ev->code);
+      }
     }
   }
 }
