@@ -254,13 +254,7 @@ void handle_events(int evfd) {
     if (ev->value != 1)
       continue;
 
-    switch (ev->code) {
-    case KEY_ENTER:
-      running = 0;
-      break;
-    default:
-      change_dir(ev->code);
-    }
+    printf("Key: %d\n", ev->code);
   }
 }
 

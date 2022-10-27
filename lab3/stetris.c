@@ -85,9 +85,9 @@ void set_pixel(u_int8_t x_pos, u_int8_t y_pos, u_int8_t red, u_int8_t green,
 // Here you can initialize what ever you need for your task
 // return false if something fails, else true
 bool initializeSenseHat() {
+  // Locate the LED matrix framebuffer device
   fbfd = -1;
   bool fb_found = false;
-
   for (int i = 0; i < 32; i++) {
     char device_string[12];
     sprintf(device_string, "/dev/fb%d", i);
@@ -111,9 +111,9 @@ bool initializeSenseHat() {
     return false;
   }
 
+  // Locate the joystick device
   jsfd = -1;
   bool js_found = false;
-
   for (int i = 0; i < 32; i++) {
     char device_string[12];
     sprintf(device_string, "/dev/input/event%d", i);
@@ -158,8 +158,13 @@ bool initializeSenseHat() {
 // This function is called when the application exits
 // Here you can free up everything that you might have opened/allocated
 void freeSenseHat() {
+  // Turn off LED matrix
+  memset(fbdata, 0, fb_data_size);
+
+  // Unmap framebuffer and close file descriptors
   munmap(fbdata, fb_data_size);
   close(fbfd);
+  close(jsfd);
 }
 
 // This function should return the key that corresponds to the joystick press
@@ -167,8 +172,16 @@ void freeSenseHat() {
 // and KEY_ENTER, when the the joystick is pressed
 // !!! when nothing was pressed you MUST return 0 !!!
 int readSenseHatJoystick() {
-  struct input_event event[64];
-  int rd = read(jsfd, event, sizeof(struct input_event) * 64);
+  struct pollfd evpoll = {.events = POLLIN, .fd = jsfd};
+
+  while (poll(&evpoll, 1, 0) > 0) {
+    struct input_event event;
+    read(jsfd, &event, sizeof(struct input_event));
+    if (event.type == EV_KEY && event.value == 1) {
+      return event.code;
+    }
+  }
+
   return 0;
 }
 
